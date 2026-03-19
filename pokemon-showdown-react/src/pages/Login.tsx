@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/auth';
 
 const { Title, Text } = Typography;
@@ -9,6 +9,16 @@ const { Title, Text } = Typography;
 const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('kick') === 'true') {
+      message.warning('您的账号已在其他地方登录，请重新登录。', 5);
+      // Clean up URL to avoid showing message again on refresh
+      navigate('/login', { replace: true });
+    }
+  }, [location, navigate]);
 
   const onFinish = async (values: any) => {
     setLoading(true);

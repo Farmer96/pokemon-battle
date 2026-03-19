@@ -1,0 +1,1 @@
+{"name":"rpc-service","version":"1.0.0","dependencies":{"express":"^4.18.2","pokemon-showdown":"file:../pokemon-showdown-service"}}

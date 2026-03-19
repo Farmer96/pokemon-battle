@@ -20,6 +20,16 @@ type User struct {
 	LoginIP      string    `json:"login_ip"`
 }
 
+type UserTeam struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	UserID    uint      `gorm:"index;not null" json:"user_id"`
+	Name      string    `gorm:"type:varchar(100)" json:"name"`
+	Format    string    `gorm:"type:varchar(50)" json:"format"`
+	TeamData  string    `gorm:"type:text" json:"team_data"` // Showdown export format
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+}
+
 func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(&User{})
+	return db.AutoMigrate(&User{}, &UserTeam{})
 }

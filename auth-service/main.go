@@ -44,6 +44,13 @@ func main() {
 		api.POST("/login", controllers.Login)
 	}
 
+	teams := r.Group("/api/teams")
+	{
+		teams.POST("/", controllers.SaveTeam)
+		teams.GET("/user/:userId", controllers.GetUserTeams)
+		teams.DELETE("/:teamId", controllers.DeleteTeam)
+	}
+
 	// Start server
 	log.Println("Auth Service running on :8081")
 	if err := r.Run(":8081"); err != nil {

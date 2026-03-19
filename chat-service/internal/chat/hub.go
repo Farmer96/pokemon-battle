@@ -56,26 +56,52 @@ func (h *Hub) Run() {
 		select {
 		case client := <-h.Register:
 			h.mu.Lock()
-			h.Clients[client] = true
+
+			// Kick existing user if already logged in
 			if client.Username != "" {
+				if oldClient, exists := h.Users[client.Username]; exists {
+					// Notify old client that they are being kicked
+					kickMsg := &Message{
+						Type:    "kick",
+						Sender:  "System",
+						Content: "您的账号已在其他地方登录",
+					}
+					kickBytes, _ := json.Marshal(kickMsg)
+					select {
+					case oldClient.Send <- kickBytes:
+					default:
+					}
+
+					// Remove old client
+					delete(h.Clients, oldClient)
+					for room := range oldClient.Rooms {
+						if _, ok := h.Rooms[room]; ok {
+							delete(h.Rooms[room], oldClient)
+						}
+					}
+					close(oldClient.Send)
+				}
 				h.Users[client.Username] = client
 			}
+
+			h.Clients[client] = true
+
 			// Auto join lobby
 			h.Rooms["lobby"][client] = true
 			client.Rooms["lobby"] = true
+
+			// We can't broadcast while holding the lock if broadcast takes time or channel blocks?
+			// The channels are buffered in client, so it should be fine.
+			// But let's unlock first to be safe and avoid deadlock if broadcast tries to lock (it does lock RLock).
+			h.mu.Unlock()
 
 			// Broadcast join
 			joinMsg := &Message{
 				Type:    "join",
 				Room:    "lobby",
 				Sender:  "System",
-				Content: client.Username + " joined the lobby.",
+				Content: client.Username + " 加入了大厅。",
 			}
-			// We can't broadcast while holding the lock if broadcast takes time or channel blocks?
-			// The channels are buffered in client, so it should be fine.
-			// But let's unlock first to be safe and avoid deadlock if broadcast tries to lock (it does lock RLock).
-			h.mu.Unlock()
-
 			h.BroadcastToRoom("lobby", joinMsg)
 			h.broadcastUserList()
 
@@ -125,7 +151,7 @@ func (h *Hub) Run() {
 				Type:    "leave",
 				Room:    "lobby",
 				Sender:  "System",
-				Content: client.Username + " left.",
+				Content: client.Username + " 离开了。",
 			}
 			h.BroadcastToRoom("lobby", leaveMsg)
 			h.broadcastUserList()
